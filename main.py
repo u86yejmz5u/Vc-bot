@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 from flask import Flask
 
-# 1. Flask App setup (Render ke liye taaki 24/7 online rahe)
+# 1. Flask App setup (Railway/Render ke liye 24/7 online rakhne ke liye)
 app = Flask('')
 
 
@@ -40,13 +40,17 @@ async def on_ready():
 
 @bot.command(name="join")
 async def join(ctx):
+  # Check karein ki user kisi voice channel me hai ya nahi
   if ctx.author.voice and ctx.author.voice.channel:
     channel = ctx.author.voice.channel
+
+    # Agar bot pehle se kisi VC me hai, toh move ho jayega
     if ctx.voice_client is not None:
       await ctx.voice_client.move_to(channel)
     else:
       await channel.connect()
-    await ctx.send(f"Connected to **{channel.name}**!")
+
+    # Silent join (koi chat message nahi bheja jayega)
   else:
     await ctx.send("Pehle aap kisi Voice Channel me join toh karo!")
 
@@ -55,9 +59,20 @@ async def join(ctx):
 async def leave(ctx):
   if ctx.voice_client:
     await ctx.voice_client.disconnect()
-    await ctx.send("Disconnected from the voice channel.")
+    # Silent leave (koi chat message nahi bheja jayega)
   else:
     await ctx.send("Bot kisi voice channel me nahi hai!")
+
+
+@bot.command(name="say")
+async def say(ctx, *, message: str):
+  # Command run karne wale ka message delete kar dega agar permission ho toh
+  try:
+    await ctx.message.delete()
+  except:
+    pass
+  # Sirf aapka diya hua text message bhejega
+  await ctx.send(message)
 
 
 # 3. Flask web server start karo aur phir bot run karo
