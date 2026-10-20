@@ -1,18 +1,34 @@
 import os
+import threading
 import discord
 from discord.ext import commands
-from dotenv import load_dotenv
+from flask import Flask
 
-# .env file se token load karne ke liye
-load_dotenv()
-TOKEN = os.getenv("DISCORD_TOKEN")
+# 1. Flask App setup (Render ke liye taaki 24/7 online rahe)
+app = Flask('')
 
-# Intents setup karein
+
+@app.route('/')
+def home():
+  return "Bot is alive and running 24/7!"
+
+
+def run_flask():
+  app.run(host='0.0.0.0', port=8080)
+
+
+def keep_alive():
+  t = threading.Thread(target=run_flask)
+  t.start()
+
+
+# 2. Discord Bot setup
+TOKEN = os.environ.get("DISCORD_TOKEN")
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.voice_states = True
 
-# Bot prefix define karein
 bot = commands.Bot(command_prefix="??", intents=intents)
 
 
@@ -24,16 +40,12 @@ async def on_ready():
 
 @bot.command(name="join")
 async def join(ctx):
-  # Check karein ki user kisi voice channel me hai ya nahi
   if ctx.author.voice and ctx.author.voice.channel:
     channel = ctx.author.voice.channel
-
-    # Agar bot pehle se kisi VC me hai, toh shift ho jayega
     if ctx.voice_client is not None:
       await ctx.voice_client.move_to(channel)
     else:
       await channel.connect()
-
     await ctx.send(f"Connected to **{channel.name}**!")
   else:
     await ctx.send("Pehle aap kisi Voice Channel me join toh karo!")
@@ -48,5 +60,7 @@ async def leave(ctx):
     await ctx.send("Bot kisi voice channel me nahi hai!")
 
 
-# Bot run karein
-bot.run(TOKEN)
+# 3. Flask web server start karo aur phir bot run karo
+if __name__ == "__main__":
+  keep_alive()
+  bot.run(TOKEN)
